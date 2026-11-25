@@ -4,6 +4,8 @@
 
 **Category:** Industry Defined Problem   |  **Organization:** Jyoti CNC Automation, Rajkot 
 
+> 🍴 **Fork notice:** This is a fork of [darshan1654/AI-PPE-Detection](https://github.com/darshan1654/AI-PPE-Detection) with a refreshed dashboard UI. See [What's New in This Fork](#-whats-new-in-this-fork). The screenshots below show the original UI.
+
 ![AI CCTV Surveillance · Streamlit_page-0001](https://github.com/user-attachments/assets/58a5799f-b7a4-47f7-b165-b4078429a1ea) ![AI CCTV Surveillance · Streamlit2_page-0001](https://github.com/user-attachments/assets/452a0632-cbe2-4a3b-b6ee-3c876327804f)
 
 ---
@@ -41,6 +43,27 @@ Using advanced **Deep Learning models** and **Computer Vision**, the system ensu
 - Real-time preview of camera feed
 - Violation and compliance logs
 - Summary statistics and compliance reports
+- KPI summary cards for total violations, today's count, most common violation and average confidence
+
+---
+
+## ✨ What's New in This Fork
+
+### 🌙 Dark "Control Room" Theme
+- A dark navy palette with an amber accent, designed for monitoring screens
+- A hero banner with a pulsing **SYSTEM ONLINE** status indicator
+- Restyled sidebar, tabs, buttons, metric cards, violation alerts and footer
+- Theme defaults are set in `.streamlit/config.toml`, so native Streamlit widgets match the custom styling
+
+### 📈 Dashboard KPI Row
+Four summary cards above the tabs, calculated live from `violation_logs.csv`:
+
+| Card | Shows |
+|------|-------|
+| 🔴 Total Violations | Every violation ever logged |
+| 🟠 Today | Violations logged today |
+| 🟣 Most Common | The most frequent violation type and how often it occurred |
+| 🟢 Avg. Confidence | Average detection confidence across all logs |
 
 ---
 
@@ -77,7 +100,8 @@ Using advanced **Deep Learning models** and **Computer Vision**, the system ensu
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/darshan1654/AI-PPE-Detection.git
+git clone https://github.com/thisisvikas21/AI-PPE-Detection.git
+cd AI-PPE-Detection
 
 # 2. Create and activate a virtual environment
 python -m venv venv
@@ -95,6 +119,8 @@ streamlit run app.py
 ## 📁 Project Structure
 
 ```
+├── .streamlit/
+│   └── config.toml      # Dark theme settings
 ├── app.py               # Streamlit app
 ├── best.pt              # YOLOv8 model files
 ├── yolov8n.pt           # YOLOv8 model files
