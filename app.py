@@ -7,7 +7,6 @@ import time
 import pandas as pd
 from datetime import datetime
 import numpy as np  
-from streamlit_extras.colored_header import colored_header
 from streamlit_extras.metric_cards import style_metric_cards
 from streamlit_extras.stylable_container import stylable_container
 
@@ -30,122 +29,223 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for enhanced UI
-# Custom CSS for better visual clarity and usability
+# ---------- Dark "control room" theme ----------
 st.markdown("""
     <style>
-        /* Global background and font settings */
-        .main {
-            background-color: #f2f6fc !important;
-            color: #1f1f1f;
-            font-family: 'Segoe UI', sans-serif;
+        :root {
+            --bg: #0B1220;
+            --panel: #111A2E;
+            --panel-2: #16213A;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #E6EAF2;
+            --muted: #8B95A8;
+            --accent: #F5A524;
+            --danger: #F0525F;
+            --ok: #2BC48A;
         }
 
-        /* Streamlit widgets */
-        .stButton>button {
-            background-color: #fa4b4b !important;
-            color: white !important;
-            border-radius: 6px;
-            padding: 10px 18px;
-            font-weight: 600;
+        .stApp {
+            background: radial-gradient(1200px 600px at 10% -10%, #15233F 0%, var(--bg) 55%) fixed;
+            color: var(--text);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
         }
 
-        .stSelectbox, .stTextInput, .stRadio>div {
-            background-color: #ffffff !important;
-            color: #333333;
-            border-radius: 6px;
-            padding: 8px;
+        .block-container { padding-top: 2rem; padding-bottom: 2rem; }
+
+        h1, h2, h3, h4 { color: var(--text) !important; letter-spacing: -0.01em; }
+
+        /* Hero banner */
+        .hero {
+            display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;
+            background: linear-gradient(135deg, #16213A 0%, #0F1A30 100%);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--accent);
+            border-radius: 14px;
+            padding: 1.4rem 1.8rem;
+            margin-bottom: 1.4rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+        .hero h1 { font-size: 1.9rem; margin: 0 0 0.35rem 0; padding: 0; }
+        .hero p  { color: var(--muted); margin: 0; font-size: 0.95rem; max-width: 760px; }
+        .live-pill {
+            display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+            padding: 6px 14px; border-radius: 999px;
+            background: rgba(43, 196, 138, 0.12); color: var(--ok);
+            border: 1px solid rgba(43, 196, 138, 0.35);
+            font-weight: 600; font-size: 0.8rem; letter-spacing: 0.08em;
+        }
+        .live-dot {
+            width: 8px; height: 8px; border-radius: 50%; background: var(--ok);
+            box-shadow: 0 0 0 0 rgba(43, 196, 138, 0.7);
+            animation: pulse 1.8s infinite;
+        }
+        @keyframes pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(43, 196, 138, 0.6); }
+            70%  { box-shadow: 0 0 0 10px rgba(43, 196, 138, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(43, 196, 138, 0); }
         }
 
-        .stDataFrame {
-            border-radius: 6px;
+        /* KPI cards */
+        .kpi-grid {
+            display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 1rem; margin-bottom: 1.6rem;
         }
-
-        .stAlert {
-            background-color: #fff3cd !important;
-            border-left: 4px solid #ffc107 !important;
-            color: #856404;
+        @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        .kpi {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+            position: relative; overflow: hidden;
         }
+        .kpi::before {
+            content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+            background: var(--kpi-color, var(--accent));
+        }
+        .kpi-label {
+            color: var(--muted); font-size: 0.75rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.08em;
+        }
+        .kpi-value {
+            color: var(--text); font-size: 1.75rem; font-weight: 700;
+            margin-top: 0.3rem; line-height: 1.2;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .kpi-sub { color: var(--muted); font-size: 0.8rem; margin-top: 0.2rem; }
 
-        /* Metric cards container */
-        .css-1v3fvcr {
-            padding: 1rem;
+        /* Buttons */
+        .stButton > button, .stDownloadButton > button {
+            background: var(--accent) !important;
+            color: #111 !important;
+            border: none !important;
             border-radius: 8px;
-            background-color: #ffffff;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            padding: 0.55rem 1.1rem;
+            font-weight: 600;
+            transition: transform 0.08s ease, filter 0.15s ease;
+        }
+        .stButton > button:hover, .stDownloadButton > button:hover {
+            filter: brightness(1.08); transform: translateY(-1px);
         }
 
-        .css-1y4p8pa {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] { gap: 0.4rem; border-bottom: 1px solid var(--border); }
+        .stTabs [data-baseweb="tab"] {
+            background: transparent; border-radius: 8px 8px 0 0;
+            padding: 0.6rem 1.1rem; color: var(--muted); font-weight: 600;
         }
+        .stTabs [aria-selected="true"] { color: var(--text) !important; background: var(--panel); }
+
+        /* Native metric widgets */
+        [data-testid="stMetric"] {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.8rem 1rem;
+        }
+        [data-testid="stMetricLabel"] { color: var(--muted) !important; }
+
+        .stDataFrame { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
 
         /* Violation cards */
         .violation-card {
-            border-left: 5px solid #dc3545;
-            background-color: #fff5f5;
-            padding: 12px;
-            margin-bottom: 12px;
-            border-radius: 6px;
-            color: #721c24;
+            border: 1px solid rgba(240, 82, 95, 0.35);
+            border-left: 4px solid var(--danger);
+            background: rgba(240, 82, 95, 0.08);
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.8rem;
+            border-radius: 10px;
+            color: #FFD6DA;
+            font-size: 0.9rem;
         }
+        .violation-card strong { color: var(--danger); }
 
-        /* Sidebar styling */
+        /* Sidebar */
         section[data-testid="stSidebar"] {
-            background-color: #e9f0f7 !important;
+            background: #0E1628 !important;
+            border-right: 1px solid var(--border);
+        }
+        section[data-testid="stSidebar"] img { border-radius: 10px; }
+        .side-title {
+            display: flex; align-items: center; gap: 10px;
+            margin-top: 1.2rem;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            color: var(--text);
+            padding: 0.6rem 0.9rem;
+            border-radius: 8px;
+            font-weight: 700; font-size: 1rem;
         }
 
-        /* Headers */
-        h1, h2, h3, h4 {
-            color: #003366 !important;
-        }
-
-        /* Info and warning colors */
-        .stInfo {
-            background-color: #d1ecf1 !important;
-            color: #0c5460 !important;
-        }
-
-        .stWarning {
-            background-color: #fff3cd !important;
-            color: #856404 !important;
-        }
-
-        .stError {
-            background-color: #f8d7da !important;
-            color: #721c24 !important;
-        }
+        .app-footer { text-align: center; font-size: 0.85em; color: var(--muted); margin: 3rem 0 2rem; }
+        .app-footer a { color: var(--muted); text-decoration: none; }
+        .app-footer a:hover { color: var(--accent); }
     </style>
 """, unsafe_allow_html=True)
 
 
-# Main header with colored header
-colored_header(
-    label="👷 AI CCTV Surveillance System",
-    description="An AI-powered CCTV surveillance system for real-time detection of PPE compliance, including helmet and mask violations, using YOLO and computer vision.",
-    color_name="blue-70",
-)
+# Hero header
+st.markdown("""
+    <div class="hero">
+        <div>
+            <h1>👷 AI CCTV Surveillance System</h1>
+            <p>Real-time PPE compliance monitoring: detects helmet, mask and vest violations
+            with YOLOv8 and computer vision.</p>
+        </div>
+        <div class="live-pill"><span class="live-dot"></span>SYSTEM ONLINE</div>
+    </div>
+""", unsafe_allow_html=True)
+
+
+# Dashboard KPI row (computed from the violation log)
+def load_logs():
+    if not os.path.exists(LOG_FILE):
+        return pd.DataFrame(columns=["Timestamp", "Violation", "Confidence"])
+    try:
+        df = pd.read_csv(LOG_FILE)
+    except Exception:
+        return pd.DataFrame(columns=["Timestamp", "Violation", "Confidence"])
+    if not all(col in df.columns for col in ["Timestamp", "Violation", "Confidence"]):
+        return pd.DataFrame(columns=["Timestamp", "Violation", "Confidence"])
+    return df
+
+
+def render_kpis():
+    df = load_logs()
+    total = len(df)
+    timestamps = pd.to_datetime(df["Timestamp"], errors="coerce")
+    today = int((timestamps.dt.date == datetime.now().date()).sum()) if total else 0
+    if total:
+        top = df["Violation"].value_counts()
+        top_name, top_count = str(top.index[0]), int(top.iloc[0])
+        conf = pd.to_numeric(df["Confidence"], errors="coerce").mean()
+        # Older logs store confidence as 0-1, so convert it to a percentage
+        avg_conf = f"{conf * 100:.0f}%" if pd.notna(conf) and conf <= 1 else (f"{conf:.0f}%" if pd.notna(conf) else "—")
+    else:
+        top_name, top_count, avg_conf = "—", 0, "—"
+
+    cards = [
+        ("Total Violations", f"{total:,}", "All time", "#F0525F"),
+        ("Today", f"{today:,}", datetime.now().strftime("%d %b %Y"), "#F5A524"),
+        ("Most Common", top_name, f"{top_count:,} occurrences" if total else "No data yet", "#7C8CFF"),
+        ("Avg. Confidence", avg_conf, "Detection certainty", "#2BC48A"),
+    ]
+    html = "".join(
+        f'<div class="kpi" style="--kpi-color:{color}">'
+        f'<div class="kpi-label">{label}</div>'
+        f'<div class="kpi-value" title="{value}">{value}</div>'
+        f'<div class="kpi-sub">{sub}</div></div>'
+        for label, value, sub, color in cards
+    )
+    st.markdown(f'<div class="kpi-grid">{html}</div>', unsafe_allow_html=True)
+
+
+render_kpis()
 
 # Sidebar with improved layout
 with st.sidebar:
     st.image("home.jpeg", use_container_width=True)
-    st.markdown("""
-    <div style="margin-top: 20px;">
-        <div style="
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            background-color: #003366; 
-            color: white; 
-            padding: 10px 16px; 
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1.1rem;
-        ">
-            ⚙️ Configuration
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="side-title">⚙️ Configuration</div>', unsafe_allow_html=True)
     
     # Updated source options with browser webcam
     source_type = st.radio(
@@ -260,9 +360,10 @@ def display_video(video_source):
         
         # Style the metric cards (updated parameters)
         style_metric_cards(
-            background_color="#f8f9fa",
-            border_left_color="#0068c9",
-            box_shadow="0 2px 8px rgba(0,0,0,0.1)"
+            background_color="#111A2E",
+            border_left_color="#F5A524",
+            border_color="rgba(255,255,255,0.08)",
+            box_shadow="0 4px 14px rgba(0,0,0,0.35)"
         )
         
         # Display frame
@@ -443,11 +544,10 @@ with tab2:
     else:
         st.info("ℹ️ No violations logged yet.")
 
-st.markdown("""<hr style="margin-top: 3rem; margin-bottom: 1rem;">""", unsafe_allow_html=True)
 st.markdown("""
-    <div style='text-align: center; font-size: 0.9em; color: grey; margin-bottom: 2rem;'>
+    <div class='app-footer'>
         👨‍💻 Developed by Group ID: G00171  |  Intel AI for Manufacturing | 
-        <a href='https://github.com/darshan1654/AI-PPE-Detection' target='_blank' style='color: grey; text-decoration: none;'>
+        <a href='https://github.com/darshan1654/AI-PPE-Detection' target='_blank'>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style='vertical-align: middle; margin-left: 4px;'>
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
             </svg>
